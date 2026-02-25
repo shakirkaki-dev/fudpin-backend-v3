@@ -40,8 +40,9 @@ class ItemAttributeResponse(BaseModel):
     key: str
     value: str
 
-    class Config:
-        from_attributes = True
+    model_config = {
+        "from_attributes" : True
+    }
 
 
 # -------------------------
