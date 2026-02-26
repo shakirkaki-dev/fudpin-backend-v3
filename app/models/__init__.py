@@ -1,3 +1,4 @@
 from .restaurant import Restaurant
-from .menu_item import MenuItem
-from .item_attribute import ItemAttribute
+from .menu_item import FoodItem
+from .food_variant import FoodVariant
+from .food_specification import FoodSpecification

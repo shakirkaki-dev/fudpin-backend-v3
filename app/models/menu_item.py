@@ -1,17 +1,17 @@
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.models.base import Base
 
 
-class MenuItem(Base):
-    __tablename__ = "menu_items"
+class FoodItem(Base):
+    __tablename__ = "food_items"
 
     id = Column(Integer, primary_key=True, index=True)
 
     name = Column(String, nullable=False)
     description = Column(String)
-    price = Column(Float, nullable=False)
+    rating = Column(Float, default=0.0)
 
     is_available = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -21,9 +21,16 @@ class MenuItem(Base):
     # Relationship to Restaurant
     restaurant = relationship("Restaurant", back_populates="menu_items")
 
-    # Relationship to ItemAttribute
-    attributes = relationship(
-        "ItemAttribute",
-        back_populates="menu_item",
+    # Relationship to FoodVariant
+    variants = relationship(
+        "FoodVariant",
+        back_populates="food_item",
+        cascade="all, delete-orphan"
+    )
+
+    # Relationship to FoodSpecification
+    specifications = relationship(
+        "FoodSpecification",
+        back_populates="food_item",
         cascade="all, delete-orphan"
     )

@@ -12,6 +12,7 @@ class Restaurant(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     address = Column(String)
+    landmark = Column(String)  # ✅ NEW
     phone = Column(String)
 
     latitude = Column(Float)
@@ -20,9 +21,8 @@ class Restaurant(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    # Relationship to MenuItem
     menu_items = relationship(
-        "MenuItem",
+        "FoodItem",
         back_populates="restaurant",
         cascade="all, delete-orphan"
     )
