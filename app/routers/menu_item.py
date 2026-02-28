@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 
+from app.models.restaurant import Restaurant
 from app.models.menu_item import FoodItem
 from app.models.food_variant import FoodVariant
 from app.models.food_specification import FoodSpecification
@@ -20,13 +22,30 @@ router = APIRouter(
 
 
 # -------------------------
-# Create Food Item
+# Create Food Item (Owner Protected)
 # -------------------------
 @router.post("", response_model=MenuItemResponse)
 def create_food_item(
     menu_item: MenuItemCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
 ):
+    # 🔥 Check restaurant ownership
+    restaurant = (
+        db.query(Restaurant)
+        .filter(
+            Restaurant.id == menu_item.restaurant_id,
+            Restaurant.owner_id == user_id
+        )
+        .first()
+    )
+
+    if not restaurant:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to add menu to this restaurant"
+        )
+
     new_item = FoodItem(
         name=menu_item.name,
         description=menu_item.description,
@@ -65,7 +84,7 @@ def create_food_item(
 
 
 # -------------------------
-# Get Single Food Item
+# Get Single Food Item (Public)
 # -------------------------
 @router.get("/{menu_item_id}", response_model=MenuItemResponse)
 def get_food_item(
@@ -89,18 +108,30 @@ def get_food_item(
 
 
 # -------------------------
-# Update Food Item
+# Update Food Item (Owner Protected)
 # -------------------------
 @router.put("/{menu_item_id}", response_model=MenuItemResponse)
 def update_food_item(
     menu_item_id: int,
     menu_item_data: MenuItemUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
 ):
-    food_item = db.query(FoodItem).filter(FoodItem.id == menu_item_id).first()
+    food_item = (
+        db.query(FoodItem)
+        .join(Restaurant)
+        .filter(
+            FoodItem.id == menu_item_id,
+            Restaurant.owner_id == user_id
+        )
+        .first()
+    )
 
     if not food_item:
-        raise HTTPException(status_code=404, detail="Food item not found")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to update this food item"
+        )
 
     update_data = menu_item_data.dict(exclude_unset=True)
 
@@ -114,17 +145,29 @@ def update_food_item(
 
 
 # -------------------------
-# Delete Food Item
+# Delete Food Item (Owner Protected)
 # -------------------------
 @router.delete("/{menu_item_id}")
 def delete_food_item(
     menu_item_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
 ):
-    food_item = db.query(FoodItem).filter(FoodItem.id == menu_item_id).first()
+    food_item = (
+        db.query(FoodItem)
+        .join(Restaurant)
+        .filter(
+            FoodItem.id == menu_item_id,
+            Restaurant.owner_id == user_id
+        )
+        .first()
+    )
 
     if not food_item:
-        raise HTTPException(status_code=404, detail="Food item not found")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to delete this food item"
+        )
 
     db.delete(food_item)
     db.commit()
