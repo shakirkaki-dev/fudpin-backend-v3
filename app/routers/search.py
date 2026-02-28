@@ -14,7 +14,7 @@ router = APIRouter(
 
 
 # -------------------------
-# SEARCH API (Safe Distance)
+# SEARCH API (Geo + Pagination)
 # -------------------------
 @router.get("/search")
 def search_food(
@@ -22,8 +22,14 @@ def search_food(
     lat: float = Query(...),
     lng: float = Query(...),
     radius: float = Query(...),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
+    # Calculate offset for pagination
+    offset = (page - 1) * limit
+
+    # Haversine distance formula
     distance_formula = (
         6371 * func.acos(
             func.least(
@@ -40,7 +46,8 @@ def search_food(
         )
     )
 
-    query = (
+    # Base query (without pagination)
+    base_query = (
         db.query(
             Restaurant.id,
             Restaurant.name,
@@ -51,10 +58,23 @@ def search_food(
         .join(FoodItem, FoodItem.restaurant_id == Restaurant.id)
         .filter(FoodItem.name.ilike(f"%{food}%"))
         .filter(distance_formula <= radius)
-        .order_by(distance_formula.asc())
     )
 
-    results = query.all()
+    # Total matching results
+    total_results = base_query.count()
+
+    # Calculate total pages
+    total_pages = (total_results + limit - 1) // limit if total_results > 0 else 0
+
+    # Apply sorting + pagination
+    paginated_query = (
+        base_query
+        .order_by(distance_formula.asc())
+        .limit(limit)
+        .offset(offset)
+    )
+
+    results = paginated_query.all()
 
     response = []
 
@@ -70,4 +90,10 @@ def search_food(
             "starting_price": starting_price
         })
 
-    return response
+    return {
+        "page": page,
+        "limit": limit,
+        "total_results": total_results,
+        "total_pages": total_pages,
+        "results": response
+    }
