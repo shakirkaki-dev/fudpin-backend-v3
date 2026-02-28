@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List
-from .menu_item import MenuItemResponse
+from app.schemas.menu_item import MenuItemResponse
 
 
 class RestaurantMenuResponse(BaseModel):
@@ -9,4 +9,4 @@ class RestaurantMenuResponse(BaseModel):
     menu: List[MenuItemResponse]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
