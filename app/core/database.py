@@ -19,7 +19,7 @@ SessionLocal = sessionmaker(
 )
 
 # CREATE TABLES
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 # Dependency
 def get_db():
