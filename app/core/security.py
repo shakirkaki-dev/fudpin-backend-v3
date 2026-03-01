@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+import os
+import secrets
+from dotenv import load_dotenv
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
@@ -9,15 +12,24 @@ from app.core.database import get_db
 from app.models.user import User
 
 
-# ⚠ Later move to .env
-SECRET_KEY = "super_secret_key_change_later"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_DAYS = 7
+# -------------------------
+# Load Environment Variables
+# -------------------------
+load_dotenv()
 
-# 🔐 Password hashing using Argon2
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALGORITHM = os.getenv("ALGORITHM", "HS256")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 15))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", 7))
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY is not set in environment variables")
+
+
+# -------------------------
+# Password Hashing (Argon2)
+# -------------------------
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
-
-# 🔐 Simple Bearer token authentication (NOT OAuth2)
 security = HTTPBearer()
 
 
@@ -33,13 +45,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # -------------------------
-# Create JWT Token
+# Create Access Token (15 min)
 # -------------------------
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS)
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+# -------------------------
+# Create Refresh Token (7 days)
+# -------------------------
+def create_refresh_token() -> str:
+    return secrets.token_urlsafe(64)
 
 
 # -------------------------

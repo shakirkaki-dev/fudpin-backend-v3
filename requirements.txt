@@ -20,3 +20,4 @@ python-jose[cryptography]==3.3.0
 email-validator==2.1.1
 argon2-cffi==23.1.0
 alembic
+python-dotenv
