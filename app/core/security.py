@@ -3,6 +3,11 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
+
+from app.core.database import get_db
+from app.models.user import User
+
 
 # ⚠ Later move to .env
 SECRET_KEY = "super_secret_key_change_later"
@@ -42,6 +47,7 @@ def create_access_token(data: dict):
 # -------------------------
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
 ):
     try:
         token = credentials.credentials
@@ -55,7 +61,15 @@ def get_current_user(
                 detail="Invalid authentication credentials",
             )
 
-        return int(user_id)
+        user = db.query(User).filter(User.id == int(user_id)).first()
+
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
+
+        return user
 
     except JWTError:
         raise HTTPException(

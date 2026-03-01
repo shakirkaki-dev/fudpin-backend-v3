@@ -8,6 +8,7 @@ from app.models.restaurant import Restaurant
 from app.models.menu_item import FoodItem
 from app.models.food_variant import FoodVariant
 from app.models.food_specification import FoodSpecification
+from app.models.user import User
 
 from app.schemas.restaurant import (
     RestaurantCreate,
@@ -30,7 +31,7 @@ router = APIRouter(
 def create_restaurant(
     restaurant: RestaurantCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     new_restaurant = Restaurant(
         name=restaurant.name,
@@ -40,7 +41,7 @@ def create_restaurant(
         phone=restaurant.phone,
         latitude=restaurant.latitude,
         longitude=restaurant.longitude,
-        owner_id=user_id
+        owner_id=current_user.id
     )
 
     db.add(new_restaurant)
@@ -51,45 +52,42 @@ def create_restaurant(
 
 
 # -------------------------
-# Get My Restaurants (Owner Only)
+# Get My Restaurants (Owner or Admin)
 # -------------------------
 @router.get("/me", response_model=list[RestaurantResponse])
 def get_my_restaurants(
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    restaurants = (
+    if current_user.role == "admin":
+        return db.query(Restaurant).all()
+
+    return (
         db.query(Restaurant)
-        .filter(Restaurant.owner_id == user_id)
+        .filter(Restaurant.owner_id == current_user.id)
         .all()
     )
 
-    return restaurants
-
 
 # -------------------------
-# Update Restaurant (Owner Protected)
+# Update Restaurant (Owner or Admin)
 # -------------------------
 @router.put("/{restaurant_id}", response_model=RestaurantResponse)
 def update_restaurant(
     restaurant_id: int,
     restaurant_data: RestaurantUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    restaurant = (
-        db.query(Restaurant)
-        .filter(
-            Restaurant.id == restaurant_id,
-            Restaurant.owner_id == user_id
-        )
-        .first()
-    )
+    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
 
     if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+
+    if current_user.role != "admin" and restaurant.owner_id != current_user.id:
         raise HTTPException(
-            status_code=404,
-            detail="Restaurant not found or not authorized"
+            status_code=403,
+            detail="Not authorized to update this restaurant"
         )
 
     update_data = restaurant_data.dict(exclude_unset=True)
@@ -104,27 +102,23 @@ def update_restaurant(
 
 
 # -------------------------
-# Delete Restaurant (Owner Protected)
+# Delete Restaurant (Owner or Admin)
 # -------------------------
 @router.delete("/{restaurant_id}")
 def delete_restaurant(
     restaurant_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
-    restaurant = (
-        db.query(Restaurant)
-        .filter(
-            Restaurant.id == restaurant_id,
-            Restaurant.owner_id == user_id
-        )
-        .first()
-    )
+    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
 
     if not restaurant:
+        raise HTTPException(status_code=404, detail="Restaurant not found")
+
+    if current_user.role != "admin" and restaurant.owner_id != current_user.id:
         raise HTTPException(
-            status_code=404,
-            detail="Restaurant not found or not authorized"
+            status_code=403,
+            detail="Not authorized to delete this restaurant"
         )
 
     db.delete(restaurant)
