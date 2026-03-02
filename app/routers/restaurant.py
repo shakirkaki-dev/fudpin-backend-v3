@@ -6,8 +6,6 @@ from app.core.security import get_current_user
 
 from app.models.restaurant import Restaurant
 from app.models.menu_item import FoodItem
-from app.models.food_variant import FoodVariant
-from app.models.food_specification import FoodSpecification
 from app.models.user import User
 
 from app.schemas.restaurant import (
@@ -52,7 +50,7 @@ def create_restaurant(
 
 
 # -------------------------
-# Get My Restaurants (Owner or Admin)
+# Get My Restaurants
 # -------------------------
 @router.get("/me", response_model=list[RestaurantResponse])
 def get_my_restaurants(
@@ -70,7 +68,7 @@ def get_my_restaurants(
 
 
 # -------------------------
-# Update Restaurant (Owner or Admin)
+# Update Restaurant
 # -------------------------
 @router.put("/{restaurant_id}", response_model=RestaurantResponse)
 def update_restaurant(
@@ -102,7 +100,7 @@ def update_restaurant(
 
 
 # -------------------------
-# Delete Restaurant (Owner or Admin)
+# Delete Restaurant
 # -------------------------
 @router.delete("/{restaurant_id}")
 def delete_restaurant(
@@ -157,5 +155,8 @@ def get_restaurant_menu(
     return {
         "restaurant_id": restaurant.id,
         "restaurant_name": restaurant.name,
+        "phone": restaurant.phone,
+        "latitude": restaurant.latitude,
+        "longitude": restaurant.longitude,
         "menu": available_items
     }

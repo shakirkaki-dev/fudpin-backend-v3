@@ -28,14 +28,14 @@ router = APIRouter(
 def create_food_item(
     menu_item: MenuItemCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     # 🔥 Check restaurant ownership
     restaurant = (
         db.query(Restaurant)
         .filter(
             Restaurant.id == menu_item.restaurant_id,
-            Restaurant.owner_id == user_id
+            Restaurant.owner_id == current_user.id
         )
         .first()
     )
@@ -55,7 +55,7 @@ def create_food_item(
     )
 
     db.add(new_item)
-    db.flush()
+    db.flush()  # Get new_item.id before commit
 
     # Add variants
     for variant in menu_item.variants:
@@ -115,14 +115,14 @@ def update_food_item(
     menu_item_id: int,
     menu_item_data: MenuItemUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     food_item = (
         db.query(FoodItem)
         .join(Restaurant)
         .filter(
             FoodItem.id == menu_item_id,
-            Restaurant.owner_id == user_id
+            Restaurant.owner_id == current_user.id
         )
         .first()
     )
@@ -151,14 +151,14 @@ def update_food_item(
 def delete_food_item(
     menu_item_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user),
+    current_user = Depends(get_current_user),
 ):
     food_item = (
         db.query(FoodItem)
         .join(Restaurant)
         .filter(
             FoodItem.id == menu_item_id,
-            Restaurant.owner_id == user_id
+            Restaurant.owner_id == current_user.id
         )
         .first()
     )

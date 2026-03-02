@@ -6,6 +6,9 @@ from app.schemas.menu_item import MenuItemResponse
 class RestaurantMenuResponse(BaseModel):
     restaurant_id: int
     restaurant_name: str
+    phone: str
+    latitude: float
+    longitude: float
     menu: List[MenuItemResponse]
 
     class Config:
