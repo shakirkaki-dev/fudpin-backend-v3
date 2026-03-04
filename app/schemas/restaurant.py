@@ -43,6 +43,7 @@ class RestaurantResponse(BaseModel):
     latitude: float
     longitude: float
     is_active: bool
+    owner_id: int
     created_at: datetime
 
     model_config = {

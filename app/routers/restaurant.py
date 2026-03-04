@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.database import get_db
@@ -25,12 +25,17 @@ router = APIRouter(
 # -------------------------
 # Create Restaurant (Owner Protected)
 # -------------------------
-@router.post("", response_model=RestaurantResponse)
+@router.post(
+    "/",
+    response_model=RestaurantResponse,
+    status_code=status.HTTP_201_CREATED
+)
 def create_restaurant(
     restaurant: RestaurantCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     new_restaurant = Restaurant(
         name=restaurant.name,
         description=restaurant.description,
@@ -57,14 +62,17 @@ def get_my_restaurants(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+
     if current_user.role == "admin":
         return db.query(Restaurant).all()
 
-    return (
+    restaurants = (
         db.query(Restaurant)
         .filter(Restaurant.owner_id == current_user.id)
         .all()
     )
+
+    return restaurants
 
 
 # -------------------------
@@ -77,10 +85,18 @@ def update_restaurant(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+
+    restaurant = (
+        db.query(Restaurant)
+        .filter(Restaurant.id == restaurant_id)
+        .first()
+    )
 
     if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Restaurant not found"
+        )
 
     if current_user.role != "admin" and restaurant.owner_id != current_user.id:
         raise HTTPException(
@@ -88,7 +104,7 @@ def update_restaurant(
             detail="Not authorized to update this restaurant"
         )
 
-    update_data = restaurant_data.dict(exclude_unset=True)
+    update_data = restaurant_data.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
         setattr(restaurant, key, value)
@@ -102,16 +118,24 @@ def update_restaurant(
 # -------------------------
 # Delete Restaurant
 # -------------------------
-@router.delete("/{restaurant_id}")
+@router.delete("/{restaurant_id}", status_code=status.HTTP_200_OK)
 def delete_restaurant(
     restaurant_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    restaurant = db.query(Restaurant).filter(Restaurant.id == restaurant_id).first()
+
+    restaurant = (
+        db.query(Restaurant)
+        .filter(Restaurant.id == restaurant_id)
+        .first()
+    )
 
     if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Restaurant not found"
+        )
 
     if current_user.role != "admin" and restaurant.owner_id != current_user.id:
         raise HTTPException(
@@ -122,7 +146,10 @@ def delete_restaurant(
     db.delete(restaurant)
     db.commit()
 
-    return {"message": "Restaurant deleted successfully"}
+    return {
+        "message": "Restaurant deleted successfully",
+        "restaurant_id": restaurant_id
+    }
 
 
 # -------------------------
@@ -133,6 +160,7 @@ def get_restaurant_menu(
     restaurant_id: int,
     db: Session = Depends(get_db)
 ):
+
     restaurant = (
         db.query(Restaurant)
         .options(
@@ -146,10 +174,14 @@ def get_restaurant_menu(
     )
 
     if not restaurant:
-        raise HTTPException(status_code=404, detail="Restaurant not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Restaurant not found"
+        )
 
     available_items = [
-        item for item in restaurant.menu_items if item.is_available
+        item for item in restaurant.menu_items
+        if item.is_available
     ]
 
     return {
