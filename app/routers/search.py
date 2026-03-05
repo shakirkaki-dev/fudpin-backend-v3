@@ -26,7 +26,7 @@ def search_food(
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    # Calculate offset for pagination
+
     offset = (page - 1) * limit
 
     # Haversine distance formula
@@ -46,7 +46,6 @@ def search_food(
         )
     )
 
-    # Base query (without pagination)
     base_query = (
         db.query(
             Restaurant.id,
@@ -56,17 +55,18 @@ def search_food(
             FoodItem
         )
         .join(FoodItem, FoodItem.restaurant_id == Restaurant.id)
-        .filter(FoodItem.name.ilike(f"%{food}%"))
+        .filter(
+            FoodItem.name.ilike(f"%{food}%"),
+            FoodItem.is_available == True,
+            Restaurant.is_active == True
+        )
         .filter(distance_formula <= radius)
     )
 
-    # Total matching results
     total_results = base_query.count()
 
-    # Calculate total pages
     total_pages = (total_results + limit - 1) // limit if total_results > 0 else 0
 
-    # Apply sorting + pagination
     paginated_query = (
         base_query
         .order_by(distance_formula.asc())

@@ -53,13 +53,16 @@ class MenuItemCreate(BaseModel):
 
 
 # -------------------------
-# Update Food Item (Partial)
+# Update Food Item
 # -------------------------
 class MenuItemUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
     rating: Optional[float] = None
     is_available: Optional[bool] = None
+
+    variants: Optional[List[FoodVariantCreate]] = None
+    specifications: Optional[List[FoodSpecificationCreate]] = None
 
 
 # -------------------------
@@ -73,6 +76,7 @@ class MenuItemResponse(BaseModel):
     is_available: bool
     restaurant_id: int
     created_at: datetime
+
     variants: List[FoodVariantResponse]
     specifications: List[FoodSpecificationResponse]
 

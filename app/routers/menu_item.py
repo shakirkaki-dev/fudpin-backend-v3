@@ -22,7 +22,7 @@ router = APIRouter(
 
 
 # -------------------------
-# Create Food Item (Owner Protected)
+# Create Food Item
 # -------------------------
 @router.post("", response_model=MenuItemResponse)
 def create_food_item(
@@ -30,7 +30,7 @@ def create_food_item(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
-    # 🔥 Check restaurant ownership
+
     restaurant = (
         db.query(Restaurant)
         .filter(
@@ -55,9 +55,9 @@ def create_food_item(
     )
 
     db.add(new_item)
-    db.flush()  # Get new_item.id before commit
+    db.flush()
 
-    # Add variants
+    # add variants
     for variant in menu_item.variants:
         db.add(
             FoodVariant(
@@ -67,7 +67,7 @@ def create_food_item(
             )
         )
 
-    # Add specifications
+    # add specifications
     for spec in menu_item.specifications:
         db.add(
             FoodSpecification(
@@ -84,13 +84,14 @@ def create_food_item(
 
 
 # -------------------------
-# Get Single Food Item (Public)
+# Get Food Item
 # -------------------------
 @router.get("/{menu_item_id}", response_model=MenuItemResponse)
 def get_food_item(
     menu_item_id: int,
     db: Session = Depends(get_db)
 ):
+
     food_item = (
         db.query(FoodItem)
         .options(
@@ -108,7 +109,7 @@ def get_food_item(
 
 
 # -------------------------
-# Update Food Item (Owner Protected)
+# Update Food Item
 # -------------------------
 @router.put("/{menu_item_id}", response_model=MenuItemResponse)
 def update_food_item(
@@ -117,6 +118,7 @@ def update_food_item(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
+
     food_item = (
         db.query(FoodItem)
         .join(Restaurant)
@@ -133,19 +135,72 @@ def update_food_item(
             detail="Not authorized to update this food item"
         )
 
-    update_data = menu_item_data.dict(exclude_unset=True)
+    # update basic fields
+    if menu_item_data.name is not None:
+        food_item.name = menu_item_data.name
 
-    for key, value in update_data.items():
-        setattr(food_item, key, value)
+    if menu_item_data.description is not None:
+        food_item.description = menu_item_data.description
+
+    if menu_item_data.rating is not None:
+        food_item.rating = menu_item_data.rating
+
+    if menu_item_data.is_available is not None:
+        food_item.is_available = menu_item_data.is_available
+
+    # -------------------------
+    # Update variants
+    # -------------------------
+    if menu_item_data.variants is not None:
+
+        db.query(FoodVariant).filter(
+            FoodVariant.food_item_id == menu_item_id
+        ).delete()
+
+        for variant in menu_item_data.variants:
+            db.add(
+                FoodVariant(
+                    name=variant.name,
+                    price=variant.price,
+                    food_item_id=menu_item_id
+                )
+            )
+
+    # -------------------------
+    # Update specifications
+    # -------------------------
+    if menu_item_data.specifications is not None:
+
+        db.query(FoodSpecification).filter(
+            FoodSpecification.food_item_id == menu_item_id
+        ).delete()
+
+        for spec in menu_item_data.specifications:
+            db.add(
+                FoodSpecification(
+                    label=spec.label,
+                    value=spec.value,
+                    food_item_id=menu_item_id
+                )
+            )
 
     db.commit()
-    db.refresh(food_item)
 
-    return food_item
+    updated_item = (
+        db.query(FoodItem)
+        .options(
+            joinedload(FoodItem.variants),
+            joinedload(FoodItem.specifications)
+        )
+        .filter(FoodItem.id == menu_item_id)
+        .first()
+    )
+
+    return updated_item
 
 
 # -------------------------
-# Delete Food Item (Owner Protected)
+# Delete Food Item
 # -------------------------
 @router.delete("/{menu_item_id}")
 def delete_food_item(
@@ -153,6 +208,7 @@ def delete_food_item(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
+
     food_item = (
         db.query(FoodItem)
         .join(Restaurant)
