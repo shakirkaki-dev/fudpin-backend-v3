@@ -28,3 +28,7 @@ jobs:
       - name: Run tests
         run: |
           echo "No tests yet"
+               
+      - name: Build Docker image
+        run: |
+          docker build -t fudpin-backend:test .
