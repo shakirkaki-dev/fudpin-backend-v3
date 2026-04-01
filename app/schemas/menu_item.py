@@ -67,6 +67,7 @@ class MenuItemUpdate(BaseModel):
 
 # -------------------------
 # Food Item Response
+# test ci trigger
 # -------------------------
 class MenuItemResponse(BaseModel):
     id: int
