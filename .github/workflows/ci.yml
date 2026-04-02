@@ -24,7 +24,7 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run test
-        run: echo "Tests passed 🚀"
+        run: echo "Tests passed"
 
   docker:
     runs-on: ubuntu-latest
