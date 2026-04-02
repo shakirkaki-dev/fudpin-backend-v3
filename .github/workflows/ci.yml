@@ -62,10 +62,16 @@ jobs:
             echo "🚀 Pulling latest images..."
             docker-compose pull
 
-            echo "🚀 Restarting services..."
-            docker-compose up -d
+            echo "🛑 Stopping and removing old containers..."
+            docker-compose down
 
-            echo "🔄 Restarting nginx..."
-            docker restart nginx || true
+            echo "🚀 Starting fresh containers..."
+            docker-compose up -d --force-recreate
+
+            echo "📊 Container status:"
+            docker-compose ps
+
+            echo "📜 Backend logs:"
+            docker-compose logs backend || true
 
             echo "✅ Deployment complete"
