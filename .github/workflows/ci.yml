@@ -44,3 +44,31 @@ jobs:
       # 🚀 PUSH IMAGE
       - name: Push Docker image
         run: docker push shakirkaki/fudpin-backend:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Deploy to Azure VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            echo "🚀 Pulling latest image..."
+            docker pull shakirkaki/fudpin-backend:latest
+
+            echo "🛑 Stopping old container..."
+            docker stop fudpin-backend || true
+            docker rm fudpin-backend || true
+
+            echo "🚀 Starting new container..."
+            docker run -d \
+            --name fudpin-backend \
+            --network fudpin-net \
+            --env-file .env \
+            shakirkaki/fudpin-backend:latest
+
+            echo "✅ Deployment complete"
