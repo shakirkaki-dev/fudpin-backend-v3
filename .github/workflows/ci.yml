@@ -68,7 +68,7 @@ jobs:
             docker run -d \
             --name fudpin-backend \
             --network fudpin-net \
-            --env-file .env \
+            --env-file /home/dishwayadmin/fudpin-backend-v3/.env
             shakirkaki/fudpin-backend:latest
 
             echo "✅ Deployment complete"
