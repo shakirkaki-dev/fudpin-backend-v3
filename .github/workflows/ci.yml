@@ -33,15 +33,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 🔐 LOGIN TO DOCKER HUB
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # 🏗 BUILD IMAGE
       - name: Build Docker image
         run: docker build -t shakirkaki/fudpin-backend:latest .
 
-      # 🚀 PUSH IMAGE
       - name: Push Docker image
         run: docker push shakirkaki/fudpin-backend:latest
 
@@ -66,9 +63,12 @@ jobs:
 
             echo "🚀 Starting new container..."
             docker run -d \
-            --name fudpin-backend \
-            --network fudpin-net \
-            --env-file /home/dishwayadmin/fudpin-backend-v3/.env
-            shakirkaki/fudpin-backend:latest
+              --name fudpin-backend \
+              --network fudpin-net \
+              --env-file /home/dishwayadmin/fudpin-backend-v3/.env \
+              shakirkaki/fudpin-backend:latest
+
+            echo "🔄 Restarting nginx..."
+            docker restart nginx || true
 
             echo "✅ Deployment complete"
