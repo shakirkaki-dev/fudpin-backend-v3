@@ -6,10 +6,14 @@ from app.routers import menu_item
 from app.routers import search
 from app.routers import auth
 
-
+# Monitoring
+from prometheus_fastapi_instrumentator import Instrumentator
 
 
 app = FastAPI()
+
+# 👉 Add this line
+Instrumentator().instrument(app).expose(app)
 
 # Include Routers
 app.include_router(restaurant.router)
