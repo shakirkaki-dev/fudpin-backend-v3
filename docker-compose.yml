@@ -15,7 +15,7 @@ services:
       - fudpin-net
 
   backend:
-    build: .
+    image: shakirkaki/fudpin-backend:latest
     container_name: fudpin-backend
     restart: unless-stopped
     depends_on:
